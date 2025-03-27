@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: 114, 9, 183;
+    --color-secondary: 58, 12, 163;
+    --color-accent: 247, 37, 133;
+    --color-background: 16, 0, 43;
+    --color-card: 36, 0, 70;
+    --color-text-primary: 255, 255, 255;
+    --color-text-secondary: 224, 170, 255;
+  }
+
+  .light {
+    --color-primary: 26, 115, 232;
+    --color-secondary: 66, 133, 244;
+    --color-accent: 234, 67, 53;
+    --color-background: 248, 249, 250;
+    --color-card: 255, 255, 255;
+    --color-text-primary: 32, 33, 36;
+    --color-text-secondary: 95, 99, 104;
+  }
+}
+
+
