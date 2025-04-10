@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Navbar from "../components/layout/Navbar"
@@ -177,4 +176,3 @@ const Logs = ({ onLogout }) => {
 }
 
 export default Logs
-

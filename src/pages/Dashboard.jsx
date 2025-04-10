@@ -1,167 +1,88 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import Navbar from "../components/layout/Navbar"
-import FlowRateCard from "../components/dashboard/FlowRateCard"
-import TotalVolumeCard from "../components/dashboard/TotalVolumeCard"
-import FlowRateChart from "../components/charts/FlowRateChart"
-import FlipCard from "../components/ui/FlipCard"
-import { Fuel, Clock, User } from "lucide-react"
+import { Fuel } from "lucide-react"
 
-const Dashboard = ({ onLogout }) => {
-  const [vehicleType, setVehicleType] = useState("")
+const FlowRateCard = () => {
+  const [flow, setFlow] = useState<number | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const storedType = localStorage.getItem("vehicleType") || "Not Selected"
-    setVehicleType(storedType)
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch("http://192.168.101.15/api/flow-data") // replace with Arduino IP
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        
+        const data = await res.json()
+        setFlow(data.flow)
+        setTotal(data.total)
+        setError(null)
+      } catch (err) {
+        console.error("Failed to fetch:", err)
+        setError("Failed to fetch flow data")
+        setFlow(null)
+        setTotal(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+    const interval = setInterval(fetchData, 10000)
+    return () => clearInterval(interval)
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-950">
-      <Navbar onLogout={onLogout} />
+    <motion.div 
+      className="bg-gray-900 text-white p-6 rounded-xl shadow-lg border border-blue-900/50"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold flex items-center">
+          <Fuel className="w-6 h-6 text-blue-400 mr-2" />
+          Fuel Flow
+        </h2>
+      </div>
 
-      <main className="flex-1 pt-24 pb-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-            <motion.h1
-              className="text-3xl font-bold text-white"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              Fuel Flow Dashboard
-            </motion.h1>
-
-            <motion.div
-              className="mt-4 md:mt-0 px-4 py-2 bg-gray-900 rounded-full border border-blue-900/50 flex items-center shadow-sm"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <User className="w-5 h-5 text-blue-400 mr-2" />
-              <span className="text-gray-400">Vehicle Type:</span>
-              <span className="ml-2 font-medium text-white">{vehicleType.replace("-", " ")}</span>
-            </motion.div>
+      {isLoading ? (
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400 animate-pulse">Loading flow data...</span>
+        </div>
+      ) : error ? (
+        <div className="text-red-400 text-center">
+          {error}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400">Flow Rate:</span>
+            <span className="font-medium text-white">
+              {flow !== null ? `${flow.toFixed(2)} L/min` : "N/A"}
+            </span>
           </div>
-
-          {/* Main Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <FlowRateCard />
-            <TotalVolumeCard />
-          </div>
-
-          {/* Chart */}
-          <div className="mb-6">
-            <FlowRateChart />
-          </div>
-
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Recent Fuel Card */}
-            <div className="h-full">
-              <FlipCard
-                delay={1}
-                front={
-                  <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <Fuel className="w-12 h-12 text-blue-400 mb-4" />
-                    <h3 className="text-xl font-bold mb-2 text-white">Recent Fuel Up</h3>
-                    <p className="text-gray-400 text-sm">Click to view details</p>
-                  </div>
-                }
-                back={
-                  <div className="h-full flex flex-col p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <h3 className="text-xl font-bold mb-4 text-center text-white">Recent Fuel Up</h3>
-                    <div className="flex-1 flex flex-col justify-center space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Last Refuel:</span>
-                        <span className="font-medium text-white">23 Mar 2024</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Amount:</span>
-                        <span className="font-medium text-white">₹500</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Quantity:</span>
-                        <span className="font-medium text-white">5.2 L</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-
-            {/* Fuel Details Card */}
-            <div className="h-full">
-              <FlipCard
-                delay={2}
-                front={
-                  <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <Clock className="w-12 h-12 text-blue-400 mb-4" />
-                    <h3 className="text-xl font-bold mb-2 text-white">Fuel Details</h3>
-                    <p className="text-gray-400 text-sm">Click to view details</p>
-                  </div>
-                }
-                back={
-                  <div className="h-full flex flex-col p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <h3 className="text-xl font-bold mb-4 text-center text-white">Fuel Details</h3>
-                    <div className="flex-1 flex flex-col justify-center space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Average Mileage:</span>
-                        <span className="font-medium text-white">45 km/L</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Total Distance:</span>
-                        <span className="font-medium text-white">1250 km</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Fuel Efficiency:</span>
-                        <span className="font-medium text-white">Good</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-              />
-            </div>
-
-            {/* User Details Card */}
-            <div className="h-full">
-              <FlipCard
-                delay={3}
-                front={
-                  <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <User className="w-12 h-12 text-blue-400 mb-4" />
-                    <h3 className="text-xl font-bold mb-2 text-white">User Details</h3>
-                    <p className="text-gray-400 text-sm">Click to view details</p>
-                  </div>
-                }
-                back={
-                  <div className="h-full flex flex-col p-6 bg-gray-900 rounded-xl shadow-lg border border-blue-900/50">
-                    <h3 className="text-xl font-bold mb-4 text-center text-white">User Details</h3>
-                    <div className="flex-1 flex flex-col justify-center space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Name:</span>
-                        <span className="font-medium text-white">John Doe</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Vehicle Type:</span>
-                        <span className="font-medium text-white">{vehicleType.replace("-", " ")}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Member Since:</span>
-                        <span className="font-medium text-white">March 2024</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-              />
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400">Total Volume:</span>
+            <span className="font-medium text-white">
+              {total !== null ? `${total.toFixed(2)} L` : "N/A"}
+            </span>
           </div>
         </div>
-      </main>
-    </div>
+      )}
+
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        Last updated: {new Date().toLocaleTimeString()}
+      </div>
+    </motion.div>
   )
 }
 
-export default Dashboard
-
+export default FlowRateCard
